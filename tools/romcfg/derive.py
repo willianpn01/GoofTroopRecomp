@@ -16,12 +16,13 @@ from . import modes as derive_modes
 from .cpu65816 import CODE_BANKS
 
 MAX_ITER = 40
-# The callee-exit summaries recurse along call chains.  Run the derivation in
-# a thread with an explicit stack so the depth does not depend on the host's
-# default main-thread stack (Windows: 1 MiB).  The supported ROM needs fewer
-# than 1,000 frames; both values are safety margins.
+# The callee-exit summaries recurse along call chains.  Keep an explicit
+# worker stack so the depth does not depend on the host's small Windows
+# default.  CPython's Windows thread backend rejects sizes >= 256 MiB; 8 MiB
+# is page-aligned and leaves ample headroom (the supported ROM reaches 41
+# nested summaries), including on CPython versions before 3.11.
 RECURSION_LIMIT = 20000
-THREAD_STACK = 256 * 1024 * 1024
+THREAD_STACK = 8 * 1024 * 1024
 
 
 def _stops(res, tables):
