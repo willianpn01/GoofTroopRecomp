@@ -1,0 +1,43 @@
+# Everything produced locally from your ROM. Never commit any of it.
+/build/
+/build-*/
+/dist/
+/generated/
+
+# ROM files are never part of this repository.
+*.sfc
+*.smc
+*.swc
+*.fig
+/rom/
+
+# Recordings and captures written by the diagnostic options.
+*.rec
+*.wav
+*.ppm
+
+# Python
+__pycache__/
+*.pyc
+
+# CMake run outside build/
+CMakeCache.txt
+CMakeFiles/
+CMakeUserPresets.json
+compile_commands.json
+
+# Logs and temporary files
+*.log
+*.out
+*.tmp
+*.bak
+*.orig
+*~
+
+# Editors and operating systems
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini

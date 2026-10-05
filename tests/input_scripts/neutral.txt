@@ -1,0 +1,7 @@
+# INPUT1 -- explicit neutral timeline.
+#
+# An all-neutral script must be observationally identical to no script at all:
+# same logical hashes, same framebuffers, same APU state, same native PCM.
+# That is what makes "input is inert when neutral" a measured fact about the
+# scripted path and not only about the NULL path.
+1 - -

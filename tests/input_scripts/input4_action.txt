@@ -1,0 +1,14 @@
+# INPUT4 -- one gameplay action with a meaning the disassembly names.
+#
+# B is the action button.  Its effect is !RAM_GOOFT_Player1_HandsUpFlag
+# ($83:0103) going 00 -> 04 and STAYING there after release: the carry pose.
+# The other three face buttons leave it 00, which is why B is the one asserted
+# and the others are the control.
+450 Start -
+456 -     -
+520 Start -
+526 -     -
+590 Start -
+596 -     -
+1010 B -
+1022 - -

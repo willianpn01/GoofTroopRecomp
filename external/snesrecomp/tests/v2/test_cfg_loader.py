@@ -1,0 +1,348 @@
+"""Phase 6c: cfg_loader. Synthetic cfgs and a real bank01.cfg slice
+both parse without error."""
+import os
+import pathlib
+import tempfile
+
+from v2.cfg_loader import load_bank_cfg, BankCfg, NameDecl  # noqa: E402
+from v2.emit_bank import BankEntry  # noqa: E402
+
+
+def _write(content: str) -> str:
+    """Write `content` to a temp file and return the path."""
+    fd, path = tempfile.mkstemp(suffix='.cfg', text=True)
+    with os.fdopen(fd, 'w', encoding='utf-8') as f:
+        f.write(content)
+    return path
+
+
+def test_minimal_cfg_with_one_func():
+    path = _write("""\
+bank = 00
+func SomeFunc 8000 sig:void()
+""")
+    try:
+        cfg = load_bank_cfg(path)
+        assert cfg.bank == 0
+        assert len(cfg.entries) == 1
+        assert cfg.entries[0].name == 'SomeFunc'
+        assert cfg.entries[0].start == 0x8000
+        assert cfg.entries[0].end is None
+    finally:
+        os.unlink(path)
+
+
+def test_func_with_end_directive_parses_end():
+    path = _write("""\
+bank = 00
+func WithEnd 8000 end:806b sig:void() # MANUAL
+""")
+    try:
+        cfg = load_bank_cfg(path)
+        assert cfg.entries[0].end == 0x806b
+    finally:
+        os.unlink(path)
+
+
+def test_func_with_entry_mx_parses_entry_widths():
+    path = _write("""\
+bank = 0d
+func PalInstr_Wait c595 end:c599 entry_mx:0,0
+""")
+    try:
+        cfg = load_bank_cfg(path)
+        assert cfg.entries[0].entry_m == 0
+        assert cfg.entries[0].entry_x == 0
+    finally:
+        os.unlink(path)
+
+
+def test_indirect_dispatch_parses_index_bias():
+    path = _write("""\
+bank = 01
+indirect_dispatch b02f 3 idx:X tables:b032 idx_bias:1
+""")
+    try:
+        cfg = load_bank_cfg(path)
+        assert cfg.indirect_dispatch == [{
+            'site_pc16': 0xb02f,
+            'count': 3,
+            'idx_reg': 'X',
+            'table_bases': (0xb032,),
+            'idx_bias': 1,
+        }]
+    finally:
+        os.unlink(path)
+
+
+def test_strict_mx_is_explicit_opt_in():
+    path = _write("""\
+bank = 00
+strict_mx
+func A 8000 entry_mx:1,0
+    """)
+    try:
+        cfg = load_bank_cfg(path)
+        assert cfg.strict_mx is True
+        assert (cfg.entries[0].entry_m, cfg.entries[0].entry_x) == (1, 0)
+    finally:
+        os.unlink(path)
+
+
+def test_explicit_name_alias_demands_primary_function_only():
+    from v2.codegen import (register_call_demand, set_name_resolver,
+                            take_unresolved_call_targets)
+
+    take_unresolved_call_targets()
+    set_name_resolver({0x008000: "Reset", 0x908000: "Reset"})
+    register_call_demand(0x908000, 1, 1)
+    assert take_unresolved_call_targets() == {(0x008000, 1, 1)}
+    set_name_resolver({})
+
+
+def test_entry_mx_at_overrides_generated_func_entry_widths():
+    path = _write("""\
+bank = 0d
+entry_mx_at c595 0 0
+func PalInstr_Wait c595 end:c599
+""")
+    try:
+        cfg = load_bank_cfg(path)
+        assert cfg.entries[0].entry_m == 0
+        assert cfg.entries[0].entry_x == 0
+    finally:
+        os.unlink(path)
+
+
+def test_end_at_overrides_generated_func_boundary():
+    path = _write("""\
+bank = 0d
+end_at c5dd c5e4
+func PalInstr_ClearPreInstr c5dd end:c61e
+""")
+    try:
+        cfg = load_bank_cfg(path)
+        assert cfg.entries[0].end == 0xc5e4
+    finally:
+        os.unlink(path)
+
+
+def test_v1_abi_directives_ignored():
+    """v2 ignores sig:/ret_y/carry_ret/y_after/x_after/restores_x."""
+    path = _write("""\
+bank = 00
+func A 8000 sig:RetAY(uint8_k,uint8_a) ret_y carry_ret y_after:+2 x_after:+1 restores_x:g_ram[0xdde] # MANUAL
+""")
+    try:
+        cfg = load_bank_cfg(path)
+        assert len(cfg.entries) == 1
+        assert cfg.entries[0].name == 'A'
+        assert cfg.entries[0].start == 0x8000
+        # No `end:` so it stays None.
+        assert cfg.entries[0].end is None
+    finally:
+        os.unlink(path)
+
+
+def test_includes_line_collected():
+    path = _write("""\
+bank = 00
+includes = common_rtl.h smw_rtl.h variables.h funcs.h consts.h
+func A 8000
+""")
+    try:
+        cfg = load_bank_cfg(path)
+        assert cfg.includes == ['common_rtl.h', 'smw_rtl.h', 'variables.h', 'funcs.h', 'consts.h']
+    finally:
+        os.unlink(path)
+
+
+def test_name_decls_collected():
+    path = _write("""\
+bank = 00
+name 02a9e4 FindFreeNormalSpriteSlot_HighPriority
+name 01808C ProcessNormalSprites
+func MyFunc 8000
+""")
+    try:
+        cfg = load_bank_cfg(path)
+        assert len(cfg.names) == 2
+        assert cfg.names[0].addr_24 == 0x02a9e4
+        assert cfg.names[0].name == 'FindFreeNormalSpriteSlot_HighPriority'
+        assert cfg.names[1].addr_24 == 0x01808C
+        assert cfg.names[1].name == 'ProcessNormalSprites'
+    finally:
+        os.unlink(path)
+
+
+def test_exclude_range_and_data_region():
+    path = _write("""\
+bank = 00
+exclude_range 8FCF 8FD6
+data_region 02 b000 b100
+func A 8000
+""")
+    try:
+        cfg = load_bank_cfg(path)
+        assert cfg.exclude_ranges == [(0x8FCF, 0x8FD6)]
+        assert cfg.data_regions == [(0x02, 0xb000, 0xb100)]
+    finally:
+        os.unlink(path)
+
+
+def test_ptrcall_targets_preserve_24_bit_values():
+    path = _write("""\
+bank = 08
+indirect_dispatch 852c 2 ptrcall targets:8884B8,91D27F
+func A 8000
+""")
+    try:
+        cfg = load_bank_cfg(path)
+        auth = cfg.indirect_dispatch[0]
+        assert auth['ptr_call'] is True
+        assert auth['targets'] == (0x8884B8, 0x91D27F)
+    finally:
+        os.unlink(path)
+
+
+def test_ptrcall_targets_keep_16_bit_values_local():
+    path = _write("""\
+bank = 08
+indirect_dispatch 8552 2 ptrcall targets:8569,EB9F
+func A 8000
+""")
+    try:
+        cfg = load_bank_cfg(path)
+        auth = cfg.indirect_dispatch[0]
+        assert auth['targets'] == (0x8569, 0xEB9F)
+    finally:
+        os.unlink(path)
+
+
+def test_missing_bank_line_raises():
+    path = _write("""\
+func A 8000
+""")
+    try:
+        try:
+            load_bank_cfg(path)
+        except ValueError as exc:
+            assert 'bank' in str(exc)
+            return
+        assert False, "expected ValueError on missing 'bank = NN'"
+    finally:
+        os.unlink(path)
+
+
+def test_continuation_entry_is_explicit_dispatchable_category():
+    path = _write("""\
+bank = 00
+func Owner 95fb end:9628 entry_mx:1,1
+continuation_entry Resume_9611 9611 end:9628 entry_mx:1,1
+""")
+    try:
+        cfg = load_bank_cfg(path)
+        assert len(cfg.entries) == 2
+        resume = cfg.entries[1]
+        assert resume.name == 'Resume_9611'
+        assert resume.start == 0x9611
+        assert resume.end == 0x9628
+        assert (resume.entry_m, resume.entry_x) == (1, 1)
+        assert resume.entry_kind == 'continuation'
+    finally:
+        os.unlink(path)
+
+
+def test_aot_boundary_parses_typed_arbitrary_entries():
+    path = _write("""\
+bank = 23
+func PauseTask A234 end:A240 entry_mx:1,0 aot_boundary:yield aot_boundary_pc:81A234
+func FinishTask B567 end:B570 entry_mx:0,1 aot_boundary:terminate aot_boundary_pc:91B567
+""")
+    try:
+        cfg = load_bank_cfg(path)
+        assert cfg.entries[0].start == 0xA234
+        assert cfg.entries[0].aot_boundary == 'yield'
+        assert cfg.entries[0].aot_boundary_pc == 0x81A234
+        assert cfg.entries[1].start == 0xB567
+        assert cfg.entries[1].aot_boundary == 'terminate'
+        assert cfg.entries[1].aot_boundary_pc == 0x91B567
+    finally:
+        os.unlink(path)
+
+
+def test_aot_boundary_rejects_unknown_kind():
+    path = _write("bank = 23\nfunc Bad A234 aot_boundary:restart\n")
+    try:
+        try:
+            load_bank_cfg(path)
+            assert False, "unknown boundary kind must fail"
+        except ValueError as exc:
+            assert "invalid aot_boundary kind" in str(exc)
+    finally:
+        os.unlink(path)
+
+
+def test_aot_boundary_rejects_continuation_entry():
+    path = _write(
+        "bank = 23\ncontinuation_entry Bad A234 aot_boundary:yield\n")
+    try:
+        try:
+            load_bank_cfg(path)
+            assert False, "boundary on continuation must fail"
+        except ValueError as exc:
+            assert "valid only on func" in str(exc)
+    finally:
+        os.unlink(path)
+
+
+def test_aot_boundary_pc_requires_boundary():
+    path = _write("bank = 01\nfunc Bad A234 aot_boundary_pc:81A234\n")
+    try:
+        try:
+            load_bank_cfg(path)
+            assert False, "logical PC without boundary must fail"
+        except ValueError as exc:
+            assert "requires aot_boundary" in str(exc)
+    finally:
+        os.unlink(path)
+
+
+def test_real_bank_cfg_parses():
+    """Sanity: load the actual SuperMarioWorldRecomp/recomp/bank01.cfg
+    via the v1 path-resolved-from-this-tests-dir layout, if available.
+
+    Skipped if the path doesn't exist (e.g. the test is run in a
+    snesrecomp-only checkout)."""
+    REPO = pathlib.Path(__file__).resolve().parent.parent.parent
+    smw_repo = REPO.parent / 'SuperMarioWorldRecomp'
+    cfg_path = smw_repo / 'recomp' / 'bank01.cfg'
+    if not cfg_path.exists():
+        # Don't fail if the parent repo isn't side-by-side; this is a
+        # bonus integration check, not a phase gate.
+        return
+    cfg = load_bank_cfg(str(cfg_path))
+    assert cfg.bank == 1
+    assert len(cfg.entries) > 0, "bank01.cfg has no func entries?"
+    # Spot check: at least one well-known function should appear.
+    names = {e.name for e in cfg.entries}
+    # ProcessNormalSprites was earlier removed from cfg as a debug step;
+    # use a more enduring entry.
+    assert any('Spr' in n or 'Normal' in n or 'Pokey' in n for n in names), (
+        f"bank01.cfg entries don't contain any expected names; got first 5: "
+        f"{sorted(names)[:5]}"
+    )
+
+
+if __name__ == '__main__':
+    import sys, traceback
+    failed = 0
+    for name in [n for n in dir() if n.startswith('test_')]:
+        try:
+            globals()[name]()
+            print(f"  PASS  {name}")
+        except Exception:
+            failed += 1
+            print(f"  FAIL  {name}")
+            traceback.print_exc()
+    sys.exit(0 if failed == 0 else 1)

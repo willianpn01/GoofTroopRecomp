@@ -1,0 +1,23 @@
+# INPUT5 / INPUT6 / INPUT7 / INPUT8 -- the whole vertical slice in one
+# timeline: menu navigation, entering gameplay, movement on both axes, both
+# diagonals, and the B action.  This is the script the presentation-rate,
+# headless-vs-frontend and fresh-process gates replay, because it exercises
+# every part of the path at once.
+450 Start -
+456 -     -
+520 Start -
+526 -     -
+590 Start -
+596 -     -
+1010 Right      -
+1030 -          -
+1040 Down       -
+1060 -          -
+1070 B          -
+1082 -          -
+1090 Left       -
+1110 -          -
+1120 Up+Right   -
+1140 -          -
+1150 Start      -
+1156 -          -

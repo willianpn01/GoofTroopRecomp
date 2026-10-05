@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "entries": [
+    {"bank": "00", "address": "8122", "kind": "func", "name": "CODE_808122", "aot_boundary": "terminate", "aot_boundary_pc": "808122"},
+    {"bank": "00", "address": "8142", "kind": "func", "name": "CODE_808142", "aot_boundary": "yield", "aot_boundary_pc": "808142"},
+    {"bank": "00", "address": "8196", "kind": "func", "name": "CODE_808196", "aot_boundary": "yield", "aot_boundary_pc": "808196"},
+    {"bank": "00", "address": "9597", "kind": "func", "name": "CODE_809597", "aot_entry_pc": "809597"},
+    {"bank": "00", "address": "95a3", "kind": "continuation_entry", "name": "CODE_8095A3", "end": "95a9", "entry_mx": [1, 1], "aot_entry_pc": "8095a3"},
+    {"bank": "00", "address": "95a6", "kind": "continuation_entry", "name": "CODE_8095A6", "end": "95a9", "entry_mx": [1, 1]},
+    {"bank": "00", "address": "95a9", "kind": "func", "name": "CODE_8095A9", "aot_entry_pc": "8095a9"},
+    {"bank": "00", "address": "95b2", "kind": "continuation_entry", "name": "CODE_8095B2", "end": "95b5", "entry_mx": [1, 1]},
+    {"bank": "00", "address": "95ec", "kind": "continuation_entry", "name": "CODE_8095EC", "end": "95fb", "entry_mx": [1, 1], "aot_entry_pc": "8095ec"},
+    {"bank": "00", "address": "9611", "kind": "continuation_entry", "name": "CODE_809611", "end": "9628", "entry_mx": [1, 1], "aot_entry_pc": "809611"},
+    {"bank": "00", "address": "b12e", "kind": "func", "name": "CODE_80B12E", "aot_entry_pc": "80b12e"},
+    {"bank": "00", "address": "b152", "kind": "continuation_entry", "name": "CODE_80B152", "end": "b165", "entry_mx": [1, 1]},
+    {"bank": "00", "address": "b15f", "kind": "continuation_entry", "name": "CODE_80B15F", "end": "b165", "entry_mx": [1, 1]},
+    {"bank": "00", "address": "b2a9", "kind": "continuation_entry", "name": "CODE_80B2A9", "end": "b2f0", "entry_mx": [1, 0], "aot_entry_pc": "80b2a9"}
+  ]
+}

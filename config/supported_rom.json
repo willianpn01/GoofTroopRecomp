@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "game": "Goof Troop",
+  "region": "USA",
+  "revision": 0,
+  "mapping": "lorom",
+  "canonical_size": 524288,
+  "sha256": "2bb368c47189ce813ad716eef16c01cd47685cb98e2c1cb35fa6f0173c97dd7c",
+  "md5": "bb6a1198e291c8ae58e9581a4296ed4d",
+  "header_policy": "strip_exact",
+  "accepted_header_size": 512,
+  "internal_header": {
+    "offset": 32704,
+    "map_mode": 48,
+    "rom_size_code": 9,
+    "region_code": 1,
+    "version": 0
+  }
+}

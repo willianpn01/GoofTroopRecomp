@@ -1,0 +1,8 @@
+# INPUT2 / INPUT9 -- Start on the title screen: press, hold, release.
+#
+# E450 is inside the promoted title/menu plateau E407..E595.  Held for six
+# epochs so that the game's own edge detector ($00:833D `EOR $46 / AND $44`)
+# has to distinguish the press from the hold: $0048 must show Start for the
+# FIRST epoch only, $0044 for all six, and both must be clear afterwards.
+450 Start -
+456 -     -

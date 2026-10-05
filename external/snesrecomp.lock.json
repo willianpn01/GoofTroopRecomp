@@ -1,0 +1,9 @@
+{
+ "content_sha256": "0e26d796ab8b75e68ec9820fff7836874f8f98dd8a90fbe87141bf0846dc863c",
+ "files": 467,
+ "name": "snesrecomp",
+ "note": "Vendored snesrecomp snapshot (upstream_base plus the changes this build requires). tools/generate_aot.py verifies content_sha256 before generating. Submodules lib/RmlUi and lib/freetype are not needed by this build.",
+ "revision": "527f335f085ba1dd8c3f45ce5f09208b212fdd56",
+ "upstream": "https://github.com/mstan/snesrecomp",
+ "upstream_base": "93974d9b9e2e00485f795b489b823e13f4a3cec1"
+}

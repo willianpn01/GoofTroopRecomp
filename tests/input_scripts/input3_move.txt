@@ -1,0 +1,23 @@
+# INPUT3 -- directional movement in gameplay.
+#
+# Menu prologue (see README), then each direction held and released in turn,
+# then both diagonals.  Player 1 spawns at $0110=$40 / $0113=$80; each hold
+# must move the matching axis and each release must stop it.
+450 Start -
+456 -     -
+520 Start -
+526 -     -
+590 Start -
+596 -     -
+1010 Right      -
+1030 -          -
+1040 Down       -
+1060 -          -
+1070 Left       -
+1090 -          -
+1100 Up         -
+1120 -          -
+1130 Down+Right -
+1150 -          -
+1160 Up+Left    -
+1180 -          -
