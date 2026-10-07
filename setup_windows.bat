@@ -11,7 +11,8 @@ rem this folder is changed; PATH is only adjusted for this script's own run.
 setlocal EnableExtensions DisableDelayedExpansion
 set "REPO=%~dp0"
 set "PKGS=mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-SDL2 mingw-w64-ucrt-x86_64-python"
-set "RC=0"
+rem Not named RC: child processes inherit it, and CMake reads RC as the resource compiler.
+set "SETUP_RC=0"
 
 if /i "%~1"=="--clean" goto clean
 
@@ -39,7 +40,7 @@ set "PATH=%UCRT%;%PATH%"
 set "CC=gcc"
 set "PYTHONDONTWRITEBYTECODE=1"
 "%UCRT%\python.exe" "%REPO%tools\goof_setup.py" %*
-set "RC=%ERRORLEVEL%"
+set "SETUP_RC=%ERRORLEVEL%"
 goto done
 
 :no_msys
@@ -53,7 +54,7 @@ echo   2. Run:   setup_windows.bat --install-deps
 echo   3. Run:   setup_windows.bat C:\path\to\rom.sfc
 echo.
 echo   Installed somewhere else? Set MSYS2_ROOT to that folder and run again.
-set "RC=30"
+set "SETUP_RC=30"
 goto done
 
 :missing_tools
@@ -64,7 +65,7 @@ echo   Install them with:
 echo       setup_windows.bat --install-deps
 echo   then run setup again:
 echo       setup_windows.bat C:\path\to\rom.sfc
-set "RC=30"
+set "SETUP_RC=30"
 goto done
 
 :install_deps
@@ -77,8 +78,8 @@ set "ANSWER="
 set /p "ANSWER=Install now? [y/N] "
 if /i not "%ANSWER%"=="y" goto install_cancelled
 "%MSYS%\usr\bin\bash.exe" -lc "pacman -S --needed --noconfirm %PKGS%"
-set "RC=%ERRORLEVEL%"
-if not "%RC%"=="0" goto install_failed
+set "SETUP_RC=%ERRORLEVEL%"
+if not "%SETUP_RC%"=="0" goto install_failed
 echo.
 echo Build tools installed. Now run:
 echo     setup_windows.bat C:\path\to\rom.sfc
@@ -86,7 +87,7 @@ goto done
 
 :install_cancelled
 echo Nothing was installed.
-set "RC=1"
+set "SETUP_RC=1"
 goto done
 
 :install_failed
@@ -98,11 +99,11 @@ goto done
 
 :clean
 call "%REPO%clean_windows.bat"
-set "RC=%ERRORLEVEL%"
+set "SETUP_RC=%ERRORLEVEL%"
 goto end
 
 :done
 echo.
 if not defined GOOF_NO_PAUSE pause
 :end
-endlocal & exit /b %RC%
+endlocal & exit /b %SETUP_RC%
